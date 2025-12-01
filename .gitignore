@@ -1,0 +1,24 @@
+# NeoVim
+doc/tags
+doc/tags-*
+
+# Development files (not part of plugin)
+init.lua
+lazy-lock.json
+plugin/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+.vim/
+
+# Lua
+luac.out
+
+# Testing
+.tests/

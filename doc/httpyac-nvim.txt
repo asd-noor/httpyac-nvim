@@ -1,0 +1,333 @@
+*httpyac-nvim.txt*    NeoVim wrapper for httpyac CLI - HTTP client for .http files
+
+Author:  Asaduzzaman Noor <https://github.com/asd-noor>
+License: MIT
+Version: 1.0.0
+
+==============================================================================
+CONTENTS                                                *httpyac-nvim-contents*
+
+    1. Introduction ..................... |httpyac-nvim-introduction|
+    2. Requirements ..................... |httpyac-nvim-requirements|
+    3. Installation ..................... |httpyac-nvim-installation|
+    4. Configuration .................... |httpyac-nvim-configuration|
+    5. Usage ............................ |httpyac-nvim-usage|
+    6. Functions ........................ |httpyac-nvim-functions|
+    7. Keymaps .......................... |httpyac-nvim-keymaps|
+    8. Syntax Highlighting .............. |httpyac-nvim-syntax|
+    9. Environment Files ................ |httpyac-nvim-environment|
+    10. Health Check .................... |httpyac-nvim-health|
+    11. FAQ ............................. |httpyac-nvim-faq|
+
+==============================================================================
+1. INTRODUCTION                                     *httpyac-nvim-introduction*
+
+httpyac-nvim is a NeoVim wrapper plugin for the httpyac CLI tool, providing
+seamless integration for sending HTTP requests from `.http` files directly
+within NeoVim.
+
+Features:
+  • Send HTTP requests at cursor position
+  • Send all requests in buffer
+  • Environment file management
+  • Jump to requests/variables with fuzzy picker
+  • Async request execution with dedicated output buffer
+  • Syntax highlighting for HTTP responses
+  • Integration with snacks.nvim and which-key.nvim
+
+==============================================================================
+2. REQUIREMENTS                                     *httpyac-nvim-requirements*
+
+Required:
+  • NeoVim 0.10+ (for `vim.uv` support)
+  • httpyac CLI (https://httpyac.github.io/)
+    Install: `npm install -g httpyac` or `yarn global add httpyac`
+  • snacks.nvim (https://github.com/folke/snacks.nvim)
+  • which-key.nvim (https://github.com/folke/which-key.nvim)
+
+Optional:
+  • Treesitter parser for http files (for better syntax highlighting)
+
+Check dependencies with: >
+    :checkhealth httpyac-nvim
+<
+
+==============================================================================
+3. INSTALLATION                                     *httpyac-nvim-installation*
+
+Using lazy.nvim: >lua
+
+    {
+      "asd-noor/httpyac-nvim",
+      dependencies = {
+        "folke/snacks.nvim",
+        "folke/which-key.nvim",
+      },
+      ft = "http", -- Load on http filetype
+    }
+<
+
+Using packer.nvim: >lua
+
+    use {
+      "asd-noor/httpyac-nvim",
+      requires = {
+        "folke/snacks.nvim",
+        "folke/which-key.nvim",
+      },
+      ft = "http",
+    }
+<
+
+Manual Installation:
+  1. Clone repository to your NeoVim plugin directory
+  2. Ensure snacks.nvim and which-key.nvim are installed
+  3. Add plugin directory to runtimepath if needed
+
+==============================================================================
+4. CONFIGURATION                                   *httpyac-nvim-configuration*
+
+Basic setup in your `init.lua`: >lua
+
+    require("httpyac-nvim").setup({})
+<
+
+The plugin currently doesn't require custom configuration options. Setup is
+called automatically via `plugin/httpyac-nvim.lua` when the plugin loads.
+
+==============================================================================
+5. USAGE                                                   *httpyac-nvim-usage*
+
+Create a `.http` file with HTTP requests: >
+
+    GET https://httpbin.org/get
+
+    POST https://httpbin.org/post
+    Content-Type: application/json
+
+    {
+      "key": "value"
+    }
+
+    ### Variables
+    @baseUrl = https://api.example.com
+    @token = your-auth-token
+
+    GET {{baseUrl}}/users
+    Authorization: Bearer {{token}}
+<
+
+Open the file in NeoVim:
+    `nvim test.http`
+
+Use keymaps (see |httpyac-nvim-keymaps|) to send requests and navigate.
+
+==============================================================================
+6. FUNCTIONS                                           *httpyac-nvim-functions*
+
+The plugin exposes the following Lua functions:
+
+                                           *httpyac-nvim.send_request_at_cursor*
+send_request_at_cursor({opts})
+    Send the HTTP request at the current cursor position.
+
+    Parameters: ~
+        {opts}  (table|nil) Optional table with additional httpyac CLI args
+
+    Example: >lua
+        require("httpyac-nvim").send_request_at_cursor()
+        -- With options:
+        require("httpyac-nvim").send_request_at_cursor({"--verbose"})
+<
+
+                                                *httpyac-nvim.send_all_requests*
+send_all_requests({opts})
+    Send all HTTP requests in the current buffer.
+
+    Parameters: ~
+        {opts}  (table|nil) Optional table with additional httpyac CLI args
+
+    Example: >lua
+        require("httpyac-nvim").send_all_requests()
+<
+
+                                                   *httpyac-nvim.set_custom_env*
+set_custom_env()
+    Open file picker to select an httpyac environment file.
+    Sets the environment for subsequent requests.
+
+    Example: >lua
+        require("httpyac-nvim").set_custom_env()
+<
+
+                                                  *httpyac-nvim.view_custom_env*
+view_custom_env()
+    Display the currently configured environment file.
+
+    Example: >lua
+        require("httpyac-nvim").view_custom_env()
+<
+
+                                                  *httpyac-nvim.jump_to_request*
+jump_to_request()
+    Open fuzzy picker to jump to HTTP requests in current buffer.
+    Detects HTTP methods: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS,
+    CONNECT, TRACE.
+
+    Example: >lua
+        require("httpyac-nvim").jump_to_request()
+<
+
+                                                 *httpyac-nvim.jump_to_variable*
+jump_to_variable()
+    Open fuzzy picker to jump to HTTP variables in current buffer.
+    Detects variables in format: `@variable = value`
+
+    Example: >lua
+        require("httpyac-nvim").jump_to_variable()
+<
+
+==============================================================================
+7. KEYMAPS                                               *httpyac-nvim-keymaps*
+
+Default keymaps are automatically registered for `http` filetype buffers:
+
+    NORMAL MODE                                        *httpyac-nvim-keymaps-n*
+
+    <leader>Rs          Send HTTP request at cursor position
+    <leader>RS          Send all HTTP requests in buffer
+    <leader>Re          View current httpyac environment
+    <leader>RE          Set httpyac environment file
+    <leader>ss          Jump to HTTP request (fuzzy picker)
+    <leader>sv          Jump to HTTP variable (fuzzy picker)
+
+Note: Default leader key is usually `<Space>`. Keymaps are buffer-local and
+only active in `.http` files.
+
+Customization:
+If you want custom keymaps, you can disable the default ones and create your
+own. The keymaps are registered in `lua/httpyac-nvim/autocmd.lua`.
+
+==============================================================================
+8. SYNTAX HIGHLIGHTING                                   *httpyac-nvim-syntax*
+
+The plugin provides custom syntax highlighting for HTTP response output in
+the dedicated output buffer (HTTPYAC_OUT).
+
+Highlighted elements:
+  • HTTP methods (GET, POST, etc.)
+  • URLs and paths
+  • HTTP status codes (color-coded by category):
+    - 2xx: Success (green)
+    - 3xx: Redirect (cyan)
+    - 4xx: Client error (yellow)
+    - 5xx: Server error (red)
+  • HTTP headers
+  • Date fields
+  • JSON strings and numbers
+  • Comments
+
+The output buffer uses the `httpyacout` filetype, which automatically loads
+`syntax/httpyacout.vim`.
+
+For `.http` source files, we recommend using treesitter for syntax
+highlighting instead of custom syntax files.
+
+==============================================================================
+9. ENVIRONMENT FILES                               *httpyac-nvim-environment*
+
+httpyac supports environment files for managing variables across different
+contexts (dev, staging, production, etc.).
+
+Setting Environment:
+
+Method 1: Using keymap >
+    <leader>RE  " Opens file picker to select environment file
+<
+
+Method 2: Using Lua function >lua
+    require("httpyac-nvim").set_custom_env()
+<
+
+Method 3: Using environment variable >bash
+    export HTTPYAC_ENV=/path/to/httpyac.config.js
+<
+
+Viewing Current Environment: >
+    <leader>Re  " Shows current environment file
+<
+
+Environment file format:
+See httpyac documentation: https://httpyac.github.io/guide/environments.html
+
+Example `httpyac.config.js`: >javascript
+    module.exports = {
+      environments: {
+        dev: {
+          baseUrl: "http://localhost:3000",
+          token: "dev-token"
+        },
+        prod: {
+          baseUrl: "https://api.production.com",
+          token: "prod-token"
+        }
+      }
+    };
+<
+
+==============================================================================
+10. HEALTH CHECK                                          *httpyac-nvim-health*
+
+Run health check to verify all dependencies: >
+    :checkhealth httpyac-nvim
+<
+
+The health check verifies:
+  • httpyac CLI installation and version
+  • snacks.nvim availability
+  • which-key.nvim availability
+  • NeoVim version compatibility (0.10+)
+  • HTTPYAC_ENV environment variable status
+
+==============================================================================
+11. FAQ                                                      *httpyac-nvim-faq*
+
+Q: The plugin doesn't load when I open .http files
+A: Ensure you have:
+   1. Called `setup()` or the plugin is in your runtimepath
+   2. The file has `.http` extension or `filetype=http` is set
+   3. Dependencies (snacks.nvim, which-key.nvim) are installed
+
+Q: Syntax highlighting doesn't work in output buffer
+A: Check:
+   1. Run `:checkhealth httpyac-nvim`
+   2. Verify `syntax/httpyacout.vim` exists
+   3. Check output buffer has `filetype=httpyacout` (`:set ft?`)
+
+Q: httpyac command not found
+A: Install httpyac CLI:
+   `npm install -g httpyac` or `yarn global add httpyac`
+   Verify with: `httpyac --version`
+
+Q: How do I customize keymaps?
+A: Edit `lua/httpyac-nvim/autocmd.lua` or create your own keymaps that call
+   the plugin functions directly. See |httpyac-nvim-functions|.
+
+Q: Can I use this without snacks.nvim?
+A: No, snacks.nvim is a required dependency for the picker functionality.
+
+Q: How do I pass custom httpyac CLI options?
+A: Pass options table to functions: >lua
+   require("httpyac-nvim").send_request_at_cursor({"--verbose"})
+<
+
+Q: Where is the output displayed?
+A: Output appears in a dedicated vertical split buffer named "HTTPYAC_OUT".
+   The buffer persists across requests and auto-scrolls to top on new output.
+
+Q: Can I run requests in parallel?
+A: Currently, concurrent requests overwrite the same output buffer. This is
+   a known limitation. Future versions may support multiple output buffers.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
