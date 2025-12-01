@@ -321,7 +321,7 @@ MIT License - see LICENSE file for details
 ## Credits
 
 - Built on top of [httpyac](https://httpyac.github.io/) by Andreas Wassner
-- Inspired by VSCode's REST Client extension
+- Inspired from [nvim-httpyac](https://github.com/abidibo/nvim-httpyac/)
 - Uses [snacks.nvim](https://github.com/folke/snacks.nvim) for pickers
 - Uses [which-key.nvim](https://github.com/folke/which-key.nvim) for keybindings
 
