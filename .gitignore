@@ -3,7 +3,7 @@ doc/tags
 doc/tags-*
 
 # Development files (not part of plugin)
-init.lua
+/init.lua
 lazy-lock.json
 plugin/
 
