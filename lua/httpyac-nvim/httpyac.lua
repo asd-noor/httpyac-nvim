@@ -28,6 +28,8 @@ local exec_httpyac = function(opts)
 	if M.envfile ~= nil and M.envfile ~= "" then
 		table.insert(args, "--env")
 		table.insert(args, M.envfile)
+
+		vim.notify("HTTPYAC: Using Custom Environment: " .. M.envfile, vim.log.levels.INFO)
 	end
 
 	-- create a tmp copy of the file
@@ -138,7 +140,7 @@ M.view_custom_env = function()
 		return
 	end
 
-	vim.notify("Current HTTPYAC Environment: " .. M.envfile, vim.log.levels.INFO)
+	vim.notify("Custom HTTPYAC Environment: " .. M.envfile, vim.log.levels.INFO)
 end
 
 M.send_request_at_cursor = function(opts)
