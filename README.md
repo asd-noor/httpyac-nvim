@@ -48,6 +48,9 @@ A NeoVim wrapper plugin for [httpyac](https://httpyac.github.io/) CLI - Send HTT
     }
   },
   ft = "http", -- Load on http filetype
+  config = function()
+    require("httpyac-nvim").setup({})
+  end,
 }
 ```
 
