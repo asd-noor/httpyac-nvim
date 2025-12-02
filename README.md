@@ -117,7 +117,7 @@ All keymaps are buffer-local and only active in `.http` files:
 | `<leader>RS` | `send_all_requests()`              | Send all HTTP requests in buffer      |
 | `<leader>Re` | `view_custom_env()`                | View current httpyac environment      |
 | `<leader>RE` | `set_custom_env()`                 | Set httpyac environment file          |
-| `<leader>Rs` | `jump_to_request()`                | Jump to HTTP request (fuzzy picker)   |
+| `<leader>Rr` | `jump_to_request()`                | Jump to HTTP request (fuzzy picker)   |
 | `<leader>Rv` | `jump_to_variable()`               | Jump to HTTP variable (fuzzy picker)  |
 
 > **Note:** Default leader key is usually `<Space>`
