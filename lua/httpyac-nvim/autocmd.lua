@@ -43,8 +43,8 @@ M.register_keymaps = function()
 					icon = "⚙️",
 					buffer = b,
 				},
-				{ "<leader>ss", httputil.jump_to_request, desc = "HTTP Requests", buffer = b, icon = "🌐" },
-				{ "<leader>sv", httputil.jump_to_variable, desc = "HTTP Variables", buffer = b, icon = "🌐" },
+				{ "<leader>Rj", httputil.jump_to_request, desc = "HTTP Requests", buffer = b, icon = "🌐" },
+				{ "<leader>Rv", httputil.jump_to_variable, desc = "HTTP Variables", buffer = b, icon = "🌐" },
 			}, { buffer = b, noremap = true, silent = true })
 		end,
 	})
