@@ -1,5 +1,10 @@
 if exists("b:current_syntax") | finish | endif
 
+runtime! syntax/json.vim
+if exists("b:current_syntax")
+  unlet b:current_syntax
+endif
+
 syn match   httpyacoutComment "\v^#.*$"
 syn keyword httpyacoutMethod OPTIONS GET HEAD POST PUT DELETE TRACE CONNECT nextgroup=httpyacoutPath
 syn match   httpyacoutPath  /.*$/hs=s+1 contained
