@@ -183,4 +183,9 @@ M.send_buffer_requests = function(opts)
 	exec_httpyac(args)
 end
 
+M.close_output = function()
+	B.close_output(M.outputbufnr)
+	M.outputbufnr = nil
+end
+
 return M

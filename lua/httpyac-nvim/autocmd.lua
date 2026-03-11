@@ -48,6 +48,15 @@ M.register_keymaps = function()
 			}, { buffer = b, noremap = true, silent = true })
 		end,
 	})
+
+	newautocmd("FileType", {
+		group = newgroup("HTTPYACOutKeymaps", { clear = true }),
+		pattern = "httpyacout",
+		callback = function(args)
+			local b = args.buf
+			vim.keymap.set("n", "x", httpyac.close_output, { buffer = b, noremap = true, silent = true, desc = "Close HTTPYAC output" })
+		end,
+	})
 end
 
 return M

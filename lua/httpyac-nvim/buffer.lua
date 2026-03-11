@@ -52,4 +52,19 @@ M.update_readonly_buffer = function(filetype, bufnr, data)
 	end
 end
 
+--- Close the output window (if still open) and wipe the buffer.
+---@param bufnr number|nil The buffer number to close.
+M.close_output = function(bufnr)
+	if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
+		return
+	end
+
+	local winid = vim.fn.bufwinid(bufnr)
+	if winid ~= -1 then
+		vim.api.nvim_win_close(winid, true)
+	end
+
+	vim.api.nvim_buf_delete(bufnr, { force = true })
+end
+
 return M
