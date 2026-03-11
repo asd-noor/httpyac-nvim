@@ -85,7 +85,8 @@ local exec_httpyac = function(opts)
 		vim.schedule(function()
 			-- Clean up tmp file
 			vim.fn.delete(tmp_file_path)
-			B.update_readonly_buffer(M.outputft, M.outputbufnr, full_output)
+			local header = "# Press 'x' to close this buffer\n\n"
+			B.update_readonly_buffer(M.outputft, M.outputbufnr, header .. full_output)
 		end)
 	end)
 
