@@ -10,7 +10,66 @@ A NeoVim wrapper plugin for [httpyac](https://httpyac.github.io/) CLI - Send HTT
 - 🔍 **Fuzzy Navigation** - Jump to requests/variables with integrated picker
 - 🌍 **Environment Management** - Switch between dev/staging/prod environments
 - 📤 **Dedicated Output** - Persistent vertical split buffer for responses
+- 🔗 **Session Mode** - Persistent cookies, `$global` variables, and OAuth tokens across requests
 - 🔌 **Seamless Integration** - Works with snacks.nvim and which-key.nvim
+
+## Session Mode
+
+By default, httpyac-nvim spawns a fresh `httpyac` CLI process per request, which loses all state between calls.  **Session mode** launches a long-lived Node.js sidecar that uses httpyac as a library, keeping the same process alive so that:
+
+- **Cookies** set by one request are automatically sent to subsequent requests.
+- **`$global` variables** (e.g. auth tokens extracted from a login response) persist for the entire Neovim session.
+- **OAuth tokens** are cached and refreshed in-process — no re-authentication on every call.
+
+> **Scope:** Session state is per-Neovim-session and lives only in memory. Closing Neovim (or calling `<leader>Rxr` Reset) discards all state.
+
+### Session Keymaps
+
+All keymaps are buffer-local and active in `.http` files under the `<leader>Rx` prefix:
+
+| Keymap        | Action                              | Description                                  |
+|---------------|-------------------------------------|----------------------------------------------|
+| `<leader>Rxs` | `send_request_at_cursor_session()`  | Send request at cursor (persistent session)  |
+| `<leader>RxS` | `send_all_session()`                | Send all requests in buffer (session)        |
+| `<leader>Rxr` | `reset_session()`                   | Clear `$global`, cookies, OAuth tokens       |
+| `<leader>Rxv` | `show_session_globals()`            | Inspect current `$global` in a float window  |
+| `<leader>Rxi` | `session_status()`                  | Show sidecar status and global var count     |
+
+### Example Workflow — Login then Authenticated Call
+
+```http
+### Step 1 — Login and store the token globally
+POST https://api.example.com/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{username}}",
+  "password": "{{password}}"
+}
+
+{{
+  // Post-response script: save token into $global
+  $global.token = response.parsedBody.token;
+}}
+
+###
+
+### Step 2 — Use the stored token (same session)
+GET https://api.example.com/users/me
+Authorization: Bearer {{$global.token}}
+```
+
+1. Place the cursor on the `POST` request and press `<leader>Rxs` — the token is captured.
+2. Place the cursor on the `GET` request and press `<leader>Rxs` — it uses `$global.token` automatically.
+3. Press `<leader>Rxv` to inspect all stored globals in a floating window.
+4. Press `<leader>Rxr` to clear the session when done.
+
+### Requirements for Session Mode
+
+- **`node`** must be in `PATH` (already required by httpyac itself).
+- httpyac must be installed globally (`npm install -g httpyac` or via Homebrew).
+
+The sidecar process starts automatically on the first session request and shuts down cleanly when Neovim exits.
 
 ## Requirements
 

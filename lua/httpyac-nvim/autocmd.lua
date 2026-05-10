@@ -43,8 +43,15 @@ M.register_keymaps = function()
 					icon = "⚙️",
 					buffer = b,
 				},
-				{ "<leader>Rr", httputil.jump_to_request, desc = "HTTP Requests", buffer = b, icon = "🌐" },
+				{ "<leader>Rr", httputil.jump_to_request,  desc = "HTTP Requests",  buffer = b, icon = "🌐" },
 				{ "<leader>Rv", httputil.jump_to_variable, desc = "HTTP Variables", buffer = b, icon = "🌐" },
+				-- Session mode (persistent Node.js sidecar)
+				{ "<leader>Rx",  group = "Session",                                           icon = "🔗", buffer = b },
+				{ "<leader>Rxs", httpyac.send_request_at_cursor_session, desc = "Send at cursor (session)", icon = "🔗", buffer = b },
+				{ "<leader>RxS", httpyac.send_all_session,               desc = "Send all (session)",       icon = "📡", buffer = b },
+				{ "<leader>Rxr", httpyac.reset_session,                  desc = "Reset session",             icon = "🔄", buffer = b },
+				{ "<leader>Rxv", httpyac.show_session_globals,           desc = "Show session globals",      icon = "📋", buffer = b },
+				{ "<leader>Rxi", httpyac.session_status,                 desc = "Session status",            icon = "ℹ️",  buffer = b },
 			}, { buffer = b, noremap = true, silent = true })
 		end,
 	})
@@ -55,6 +62,14 @@ M.register_keymaps = function()
 		callback = function(args)
 			local b = args.buf
 			vim.keymap.set("n", "x", httpyac.close_output, { buffer = b, noremap = true, silent = true, desc = "Close HTTPYAC output" })
+		end,
+	})
+
+	-- Kill the session sidecar cleanly when Neovim exits.
+	newautocmd("VimLeavePre", {
+		group = newgroup("HTTPYACSessionCleanup", { clear = true }),
+		callback = function()
+			require("httpyac-nvim.session").stop()
 		end,
 	})
 end

@@ -2,6 +2,7 @@ local M = {}
 
 local P = require("snacks.picker")
 local B = require("httpyac-nvim.buffer")
+local S = require("httpyac-nvim.session")
 
 M.envfile = vim.env.HTTPYAC_ENV or ""
 M.outputbufnr = nil
@@ -187,6 +188,74 @@ end
 M.close_output = function()
 	B.close_output(M.outputbufnr)
 	M.outputbufnr = nil
+end
+
+-- ---------------------------------------------------------------------------
+-- Session-mode functions (use persistent Node.js sidecar via session.lua)
+-- ---------------------------------------------------------------------------
+
+--- Show a "working" placeholder in the output buffer while the sidecar runs.
+local function update_with_session_response(r)
+	local count = 0
+	if r.globals then
+		for _ in pairs(r.globals) do
+			count = count + 1
+		end
+	end
+	local header = "# Press 'x' to close this buffer\n# Session: " .. count .. " global var(s)\n\n"
+	local body
+	if not r.ok and r.error then
+		body = "ERROR: " .. r.error .. "\n\n" .. (r.output or "")
+	else
+		body = r.output or "(no output)"
+	end
+	B.update_readonly_buffer(M.outputft, M.outputbufnr, header .. body)
+	vim.notify("Session: " .. count .. " global var(s)", vim.log.levels.INFO)
+end
+
+M.send_request_at_cursor_session = function()
+	local file = vim.api.nvim_buf_get_name(0)
+	local line = vim.api.nvim_win_get_cursor(0)[1]
+	M.outputbufnr = B.open_readonly_vsplit(M.outputbufname, M.outputbufnr)
+	B.update_readonly_buffer(M.outputft, M.outputbufnr, "# Sending (session)...\n")
+	S.send_request(file, line, M.envfile ~= "" and M.envfile or nil, function(r)
+		update_with_session_response(r)
+	end)
+end
+
+M.send_all_session = function()
+	local file = vim.api.nvim_buf_get_name(0)
+	M.outputbufnr = B.open_readonly_vsplit(M.outputbufname, M.outputbufnr)
+	B.update_readonly_buffer(M.outputft, M.outputbufnr, "# Sending all (session)...\n")
+	S.send_all(file, M.envfile ~= "" and M.envfile or nil, function(r)
+		update_with_session_response(r)
+	end)
+end
+
+M.reset_session      = S.reset_session
+M.show_session_globals = S.show_globals
+
+M.session_status = function()
+	local running = S.is_running()
+	if not running then
+		vim.notify(
+			"Session: stopped (auto-starts on next session request)",
+			vim.log.levels.INFO
+		)
+		return
+	end
+	S.get_vars(M.envfile ~= "" and M.envfile or nil, function(r)
+		local count = 0
+		if r.globals then
+			for _ in pairs(r.globals) do
+				count = count + 1
+			end
+		end
+		vim.notify(
+			"Session: running | " .. count .. " global var(s)",
+			vim.log.levels.INFO
+		)
+	end)
 end
 
 return M
