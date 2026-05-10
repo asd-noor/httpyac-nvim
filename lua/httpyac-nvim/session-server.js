@@ -83,7 +83,8 @@ io.userInteractionProvider.showInputPrompt   = async (_p, defaultVal) => default
 io.userInteractionProvider.showListPrompt    = async (_p, choices)    =>
   Array.isArray(choices) ? choices[0] : '';
 
-// Silence all httpyac internal logging so it doesn't pollute stdout.
+// Silence verbose httpyac internal logging — errors/warnings are captured
+// per-request in handleSend and surfaced in the response instead.
 io.log.options.level = 1000; // LogLevel.none
 
 const httpFileStore = new HttpFileStore();
@@ -163,6 +164,14 @@ async function handleSend(cmd) {
   const workingDir = path.dirname(filePath);
 
   const outputParts = [];
+  const errorParts  = [];
+
+  // Temporarily capture httpyac error/warn messages so they appear in output
+  // even though the global log level is silenced.
+  const origError = io.log.error.bind(io.log);
+  const origWarn  = io.log.warn.bind(io.log);
+  io.log.error = (...args) => errorParts.push(args.map(String).join(' '));
+  io.log.warn  = (...args) => errorParts.push(args.map(String).join(' '));
 
   try {
     // Force re-parse on every call so edits to the file are picked up.
@@ -213,9 +222,13 @@ async function handleSend(cmd) {
       success = await send(baseOpts);
     }
 
+    const ok     = success !== false;
+    const output  = outputParts.join('\n\n---\n\n');
+    const errText = errorParts.join('\n');
     respond({
-      ok: success !== false,
-      output: outputParts.join('\n\n---\n\n'),
+      ok,
+      output,
+      error: !ok ? (errText || 'Request failed – server may be down or unreachable') : undefined,
       globals: readGlobals(envArg),
     });
 
@@ -226,6 +239,9 @@ async function handleSend(cmd) {
       output: outputParts.join('\n\n---\n\n'),
       globals: readGlobals(envArg),
     });
+  } finally {
+    io.log.error = origError;
+    io.log.warn  = origWarn;
   }
 }
 

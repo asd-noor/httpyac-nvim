@@ -204,10 +204,11 @@ local function update_with_session_response(r)
 	end
 	local header = "# Press 'x' to close this buffer\n# Session: " .. count .. " global var(s)\n\n"
 	local body
-	if not r.ok and r.error then
-		body = "ERROR: " .. r.error .. "\n\n" .. (r.output or "")
+	if not r.ok then
+		local msg = r.error or "Request failed – server may be down or unreachable"
+		body = "ERROR: " .. msg .. (r.output ~= "" and r.output ~= nil and ("\n\n" .. r.output) or "")
 	else
-		body = r.output or "(no output)"
+		body = (r.output ~= nil and r.output ~= "") and r.output or "(no output)"
 	end
 	B.update_readonly_buffer(M.outputft, M.outputbufnr, header .. body)
 	vim.notify("Session: " .. count .. " global var(s)", vim.log.levels.INFO)
