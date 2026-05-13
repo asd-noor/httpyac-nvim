@@ -139,26 +139,24 @@ local function env_id_from_file(filepath)
 end
 
 M.set_custom_env = function()
-	P.files({
-		prompt = "Select HTTPYAC Environment File: ",
-		hidden = true,
-		confirm = function(picker, item)
-			picker:close()
-			if item and item.file then
-				local id = env_id_from_file(item.file)
-				if id then
-					M.envfile = id
-					vim.notify("HTTPYAC Environment set to: " .. M.envfile, vim.log.levels.INFO)
-				else
-					M.envfile = ""
-					vim.notify("HTTPYAC Environment unset (global .env selected)", vim.log.levels.INFO)
-				end
-			else
-				M.envfile = ""
-				vim.notify("HTTPYAC Environment unset", vim.log.levels.INFO)
-			end
-		end,
+	local path = vim.fn.input({
+		prompt = "HTTPYAC Environment File: ",
+		default = "",
+		completion = "file",
 	})
+	if path == nil or path == "" then
+		M.envfile = ""
+		vim.notify("HTTPYAC Environment unset", vim.log.levels.INFO)
+		return
+	end
+	local id = env_id_from_file(path)
+	if id then
+		M.envfile = id
+		vim.notify("HTTPYAC Environment set to: " .. M.envfile, vim.log.levels.INFO)
+	else
+		M.envfile = ""
+		vim.notify("HTTPYAC Environment unset (global .env selected)", vim.log.levels.INFO)
+	end
 end
 
 M.view_custom_env = function()
