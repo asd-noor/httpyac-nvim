@@ -141,6 +141,7 @@ end
 M.set_custom_env = function()
 	P.files({
 		prompt = "Select HTTPYAC Environment File: ",
+		hidden = true,
 		confirm = function(picker, item)
 			picker:close()
 			if item and item.file then
