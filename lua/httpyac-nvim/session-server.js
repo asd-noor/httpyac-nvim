@@ -146,6 +146,29 @@ function readGlobals(env) {
   return (session && session.details && session.details.$global) || {};
 }
 
+/** Read httpyac VS Code variables from the nearest .vscode/settings.json. */
+function vscodeVariables(filePath, env) {
+  let dir = path.dirname(filePath);
+  while (dir !== path.dirname(dir)) {
+    try {
+      const settings = JSON.parse(fs.readFileSync(path.join(dir, '.vscode', 'settings.json'), 'utf8'));
+      const environments = settings['httpyac.environmentVariables'];
+      if (environments && typeof environments === 'object') {
+        const variables = Object.create(null);
+        for (const values of [environments.$shared, environments[env?.[0] || '$default']]) {
+          if (!values || typeof values !== 'object') continue;
+          for (const [name, value] of Object.entries(values)) {
+            if (value !== null && typeof value !== 'object') variables[name] = value;
+          }
+        }
+        return variables;
+      }
+    } catch (_) {}
+    dir = path.dirname(dir);
+  }
+  return {};
+}
+
 // ---------------------------------------------------------------------------
 // Command handlers
 // ---------------------------------------------------------------------------
@@ -189,7 +212,12 @@ async function handleSend(cmd) {
       if (text) outputParts.push(text);
     };
 
-    const baseOpts = { httpFile, activeEnvironment: envArg, logResponse };
+    const baseOpts = {
+      httpFile,
+      activeEnvironment: envArg,
+      variables: vscodeVariables(filePath, envArg),
+      logResponse,
+    };
 
     let success;
 

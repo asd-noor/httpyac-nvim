@@ -38,6 +38,33 @@ local exec_httpyac = function(opts)
 	-- save current buffer
 	vim.api.nvim_command("w! " .. tmp_file_path)
 
+	local dir = vim.fn.fnamemodify(tmp_file_path, ":h")
+	while dir ~= "" do
+		local settings_path = dir .. "/.vscode/settings.json"
+		if vim.fn.filereadable(settings_path) == 1 then
+			local ok, settings = pcall(vim.json.decode, table.concat(vim.fn.readfile(settings_path), "\n"))
+			local environments = ok and type(settings) == "table" and settings["httpyac.environmentVariables"]
+			if type(environments) == "table" then
+				-- ponytail: support scalar VS Code values only. Add recursive JSON values when httpyac supports them.
+				local function add_variables(variables)
+					if type(variables) ~= "table" then return end
+					for name, value in pairs(variables) do
+						if type(value) ~= "table" and value ~= vim.NIL then
+							table.insert(args, "--var")
+							table.insert(args, name .. "=" .. tostring(value))
+						end
+					end
+				end
+				add_variables(environments["$shared"])
+				add_variables(environments[M.envfile ~= "" and M.envfile or "$default"])
+			end
+			break
+		end
+		local parent = vim.fn.fnamemodify(dir, ":h")
+		if parent == dir then break end
+		dir = parent
+	end
+
 	-- Insert tmp file path at the beginning of args
 	table.insert(args, 1, tmp_file_path)
 
@@ -120,43 +147,16 @@ local exec_httpyac = function(opts)
 	end)
 end
 
---- Extract the environment identifier from a dotenv filename.
---- Supports: .env.<id>  and  <id>.env
---- Returns nil if the file is the global `.env` (no identifier).
-local function env_id_from_file(filepath)
-	local basename = vim.fn.fnamemodify(filepath, ":t")
-	-- .env.<identifier>
-	local id = basename:match("^%.env%.(.+)$")
-	if id then
-		return id
-	end
-	-- <identifier>.env
-	id = basename:match("^(.+)%.env$")
-	if id then
-		return id
-	end
-	return nil
-end
-
 M.set_custom_env = function()
-	local path = vim.fn.input({
-		prompt = "HTTPYAC Environment File: ",
-		default = "",
-		completion = "file",
+	local env = vim.fn.input({
+		prompt = "HTTPYAC Environment: ",
+		default = M.envfile,
 	})
-	if path == nil or path == "" then
-		M.envfile = ""
-		vim.notify("HTTPYAC Environment unset", vim.log.levels.INFO)
-		return
-	end
-	local id = env_id_from_file(path)
-	if id then
-		M.envfile = id
-		vim.notify("HTTPYAC Environment set to: " .. M.envfile, vim.log.levels.INFO)
-	else
-		M.envfile = ""
-		vim.notify("HTTPYAC Environment unset (global .env selected)", vim.log.levels.INFO)
-	end
+	M.envfile = env or ""
+	vim.notify(
+		M.envfile == "" and "HTTPYAC Environment unset" or "HTTPYAC Environment set to: " .. M.envfile,
+		vim.log.levels.INFO
+	)
 end
 
 M.view_custom_env = function()

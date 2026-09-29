@@ -174,8 +174,8 @@ All keymaps are buffer-local and only active in `.http` files:
 |--------------|-------------------------------------|---------------------------------------|
 | `<leader>Rs` | `send_request_at_cursor()`         | Send HTTP request at cursor position  |
 | `<leader>RS` | `send_all_requests()`              | Send all HTTP requests in buffer      |
-| `<leader>Re` | `view_custom_env()`                | View current httpyac environment      |
-| `<leader>RE` | `set_custom_env()`                 | Set httpyac environment file          |
+| `<leader>Re` | `set_custom_env()`                 | Set httpyac environment name          |
+| `<leader>RE` | `view_custom_env()`                | View current httpyac environment      |
 | `<leader>Rr` | `jump_to_request()`                | Jump to HTTP request (fuzzy picker)   |
 | `<leader>Rv` | `jump_to_variable()`               | Jump to HTTP variable (fuzzy picker)  |
 
@@ -212,9 +212,16 @@ httpyac supports environment files for managing variables across different conte
 
 ### Setting Environment
 
+`<leader>Re` asks for an environment name, such as `local`, `staging`, or `prod`.
+The plugin sends this value to httpyac with `--env`.
+
+httpyac loads JetBrains `http-client.env.json` and `http-client.private.env.json` near the request file.
+The plugin also loads `httpyac.environmentVariables` from the nearest `.vscode/settings.json`.
+It applies `$shared` and the selected environment. It does not load `rest-client.environmentVariables`.
+
 **Method 1: Using keymap**
 ```
-<leader>RE  " Opens file picker to select environment file
+<leader>Re  " Enter an environment name
 ```
 
 **Method 2: Using Lua function**
@@ -224,7 +231,7 @@ require("httpyac-nvim").set_custom_env()
 
 **Method 3: Using environment variable**
 ```bash
-export HTTPYAC_ENV=/path/to/httpyac.config.js
+export HTTPYAC_ENV=local
 nvim requests.http
 ```
 
@@ -309,9 +316,9 @@ require("httpyac-nvim").send_request_at_cursor({"--output", "body"})
 
 Switch environments on-the-fly:
 
-1. Press `<leader>RE`
-2. Select environment file from picker
-3. Press `<leader>Re` to verify current environment
+1. Press `<leader>Re`
+2. Enter an environment name
+3. Press `<leader>RE` to verify the current environment
 4. Send requests - they'll use the selected environment
 
 ## Troubleshooting

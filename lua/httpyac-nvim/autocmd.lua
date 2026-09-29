@@ -30,14 +30,14 @@ M.register_keymaps = function()
 					buffer = b,
 				},
 				{
-					"<leader>Re",
+					"<leader>RE",
 					httpyac.view_custom_env,
 					desc = "View HTTPYAC Environment",
 					icon = "👁️",
 					buffer = b,
 				},
 				{
-					"<leader>RE",
+					"<leader>Re",
 					httpyac.set_custom_env,
 					desc = "Set HTTPYAC Environment",
 					icon = "⚙️",
