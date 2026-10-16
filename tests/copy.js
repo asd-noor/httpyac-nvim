@@ -4,8 +4,8 @@ const assert = require('assert');
 const copy = require('./copy_helper');
 
 (async () => {
-  const r = await copy('FOO example.invalid\n', 1);
-  assert.strictEqual(r.ok, false);
+  const r = await copy('MQTT mqtt://example.invalid\n', 1);
+  assert.strictEqual(r.error, 'Copy is not supported for MQTT requests');
   const none = await copy('# only a comment\n', 1);
   assert.strictEqual(none.ok, false);
   console.log('copy: ok');
