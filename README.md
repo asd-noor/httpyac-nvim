@@ -11,6 +11,7 @@ A NeoVim wrapper plugin for [httpyac](https://httpyac.github.io/) CLI - Send HTT
 - 🌍 **Environment Management** - Switch between dev/staging/prod environments
 - 📤 **Dedicated Output** - Persistent vertical split buffer for responses
 - 🔗 **Session Mode** - Persistent cookies, `$global` variables, and OAuth tokens across requests
+- 📋 **Copy as Command** - Copy the request at cursor as a `curl`, `grpcurl`, `websocat` or `mosquitto` command
 - 🔌 **Seamless Integration** - Works with snacks.nvim and which-key.nvim
 
 ## Session Mode
@@ -70,6 +71,31 @@ Authorization: Bearer {{$global.token}}
 - httpyac must be installed globally (`npm install -g httpyac` or via Homebrew).
 
 The sidecar process starts automatically on the first session request and shuts down cleanly when Neovim exits.
+
+## Copy as Command
+
+`<leader>Rc` copies the request at the cursor as a shell command, with all variables resolved.
+The command goes to the `+` register and the unnamed register.
+The plugin picks the tool from the request type:
+
+| Request | Tool | Example |
+|---------|------|---------|
+| `GET`, `POST`, ... | `curl` | `curl -L -X 'POST' 'https://api.example.com/items' -H 'Content-Type: application/json' --data-raw '{"a":1}'` |
+| `GRPC` | `grpcurl` | `grpcurl -plaintext -H 'Authorization: x' -d '{"a":1}' 'localhost:50051' 'pkg.Svc/Method'` |
+| `WS`, `WSS` | `websocat` | `printf '%s\n' '{"hello":1}' \| websocat -H='X-Key: k' 'wss://example.com/ws'` |
+| `MQTT` | `mosquitto_pub` / `mosquitto_sub` | `mosquitto_pub -h 'broker' -p 1883 -q 1 -t 'my/topic' -m '{"on":true}'` |
+
+The request is not sent. The copy uses the session sidecar, so `node` must be in `PATH`.
+
+**Limitations**
+
+- `# @ref` / `# @import` dependencies and pre-request scripts still run, because httpyac needs them to resolve the request.
+- Bodies read from a file (`< ./body.json`) or multipart bodies are not supported.
+- `curl`: redirect settings in the httpyac config file are not detected. `# @noRedirect` and `# @noRejectUnauthorized` are.
+- `grpcurl`: the command has no `-proto` flag, so the server must support reflection. `-plaintext` is added unless the request has `ChannelCredentials: ssl`.
+- `websocat`: the whole body is sent as one message.
+- `mosquitto`: a request with a body becomes `mosquitto_pub`; without a body it becomes `mosquitto_sub`. MQTT over WebSockets is not supported. `mqtts://` uses the OS CA store (`--tls-use-os-certs`).
+- Other request types (for example `AMQP`) are not supported.
 
 ## Requirements
 
@@ -176,6 +202,7 @@ All keymaps are buffer-local and only active in `.http` files:
 | `<leader>RS` | `send_all_requests()`              | Send all HTTP requests in buffer      |
 | `<leader>Re` | `set_custom_env()`                 | Set httpyac environment name          |
 | `<leader>RE` | `view_custom_env()`                | View current httpyac environment      |
+| `<leader>Rc` | `copy_as_cmd()`                    | Copy request at cursor as a command   |
 | `<leader>Rr` | `jump_to_request()`                | Jump to HTTP request (fuzzy picker)   |
 | `<leader>Rv` | `jump_to_variable()`               | Jump to HTTP variable (fuzzy picker)  |
 
@@ -200,6 +227,9 @@ httpyac.send_all_requests()
 -- Environment management
 httpyac.set_custom_env()
 httpyac.view_custom_env()
+
+-- Copy request at cursor as curl/grpcurl/websocat/mosquitto command
+httpyac.copy_as_cmd()
 
 -- Navigation
 httpyac.jump_to_request()
