@@ -12,6 +12,7 @@
  *   { "type": "send", "file": "/abs/path.http", "all": true, "env": "dev" }
  *   { "type": "reset" }
  *   { "type": "vars", "env": "dev" }
+ *   { "type": "copy", "file": "/abs/path.http", "line": 42, "env": "dev" }
  *
  * Responses (sidecar → Lua):
  *   { "ok": true,  "output": "...", "globals": { ... } }
@@ -273,6 +274,67 @@ async function handleSend(cmd) {
   }
 }
 
+/**
+ * Resolve the request at a cursor line without sending it, then render it as
+ * a shell command with the builder in copy/<protocol>.js.  Each builder
+ * exports { name: 'curl', build(request) => string }.
+ * Note: @ref/@import dependencies and pre-request scripts still run.
+ */
+async function handleCopy(cmd) {
+  const filePath = cmd.file;
+  const envArg = (cmd.env && cmd.env !== '') ? [cmd.env] : undefined;
+  try {
+    const httpFile = await httpFileStore.getOrCreate(
+      filePath,
+      () => fs.promises.readFile(filePath, 'utf-8'),
+      Date.now(),
+      { workingDir: path.dirname(filePath) }
+    );
+    const region = httpFile.httpRegions.find(
+      (r) => !r.isGlobal() && r.symbol.startLine + 1 <= cmd.line && cmd.line <= r.symbol.endLine + 1
+    );
+    if (!region) {
+      respond({ ok: false, error: `No HTTP request found at line ${cmd.line}`, output: '' });
+      return;
+    }
+
+    let request;
+    region.hooks.onRequest.addHook('copyCapture', async (req) => {
+      request = req;
+      return httpyac.HookCancel;
+    });
+    await send({ httpFile, httpRegion: region, activeEnvironment: envArg, variables: vscodeVariables(filePath, envArg) });
+    if (!request) {
+      respond({ ok: false, error: 'Request could not be resolved', output: '' });
+      return;
+    }
+
+    const protocol = String(request.protocol || 'HTTP').toLowerCase();
+    let builder;
+    try {
+      builder = require(path.join(__dirname, 'copy', protocol + '.js'));
+    } catch (_) {
+      respond({ ok: false, error: `Copy is not supported for ${request.protocol} requests`, output: '' });
+      return;
+    }
+
+    if (Buffer.isBuffer(request.body)) request.body = request.body.toString('utf-8');
+    if (request.body !== undefined && typeof request.body !== 'string') {
+      respond({ ok: false, error: 'Copy does not support file or stream bodies', output: '' });
+      return;
+    }
+    // Drop the headers httpyac adds by default; the user did not write them.
+    const headers = Object.assign({}, request.headers);
+    if (headers.Accept === '*/*') delete headers.Accept;
+    if (headers['User-Agent'] === 'httpyac') delete headers['User-Agent'];
+    request.headers = headers;
+
+    respond({ ok: true, name: builder.name, output: builder.build(request) });
+  } catch (err) {
+    respond({ ok: false, error: err.message || String(err), output: '' });
+  }
+}
+
 function handleReset() {
   // Clear all persistent state: cookies, OAuth tokens, $global vars.
   store.userSessionStore.reset();
@@ -321,6 +383,9 @@ rl.on('line', (rawLine) => {
           break;
         case 'vars':
           handleVars(cmd);
+          break;
+        case 'copy':
+          await handleCopy(cmd);
           break;
         default:
           respond({ ok: false, error: `Unknown command type: ${cmd.type}` });
