@@ -232,6 +232,20 @@ M.send_all_session = function()
 	end)
 end
 
+M.copy_as_cmd = function()
+	local file = vim.api.nvim_buf_get_name(0)
+	local line = vim.api.nvim_win_get_cursor(0)[1]
+	S.copy(file, line, M.envfile ~= "" and M.envfile or nil, function(r)
+		if not r.ok then
+			vim.notify("httpyac: Copy failed: " .. (r.error or ""), vim.log.levels.ERROR)
+			return
+		end
+		vim.fn.setreg("+", r.output)
+		vim.fn.setreg('"', r.output)
+		vim.notify("httpyac: Copied as " .. r.name, vim.log.levels.INFO)
+	end)
+end
+
 M.reset_session      = S.reset_session
 M.show_session_globals = S.show_globals
 

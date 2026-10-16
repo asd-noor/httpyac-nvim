@@ -43,6 +43,13 @@ M.register_keymaps = function()
 					icon = "⚙️",
 					buffer = b,
 				},
+				{
+					"<leader>Rc",
+					httpyac.copy_as_cmd,
+					desc = "Copy Request as Command",
+					icon = "📋",
+					buffer = b,
+				},
 				{ "<leader>Rr", httputil.jump_to_request,  desc = "HTTP Requests",  buffer = b, icon = "🌐" },
 				{ "<leader>Rv", httputil.jump_to_variable, desc = "HTTP Variables", buffer = b, icon = "🌐" },
 				-- Session mode (persistent Node.js sidecar)

@@ -219,6 +219,20 @@ M.send_all = function(file, env, cb)
 	}, cb)
 end
 
+--- Render the request at a cursor line as a shell command, without sending it.
+--- @param file  string      Absolute path to the .http file.
+--- @param line  number      1-indexed cursor line.
+--- @param env   string|nil  Environment identifier.
+--- @param cb    function    Callback: cb({ ok, name, output, error }).
+M.copy = function(file, line, env, cb)
+	send_cmd({
+		type = "copy",
+		file = file,
+		line = line,
+		env  = env or vim.NIL,
+	}, cb)
+end
+
 --- Reset session state: clears $global variables, cookies, and OAuth tokens.
 M.reset_session = function()
 	send_cmd({ type = "reset" }, function(r)

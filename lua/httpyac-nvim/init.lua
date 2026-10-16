@@ -11,6 +11,7 @@ M.set_custom_env = requtil.set_custom_env
 M.view_custom_env = requtil.view_custom_env
 M.send_request_at_cursor = requtil.send_request_at_cursor
 M.send_all_requests = requtil.send_buffer_requests
+M.copy_as_cmd = requtil.copy_as_cmd
 
 -- Session-mode functions
 M.send_request_at_cursor_session = requtil.send_request_at_cursor_session
